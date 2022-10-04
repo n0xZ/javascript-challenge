@@ -200,12 +200,12 @@ const farms = [
   */
 // Tip: Una hectárea equivale a 10.000m2
 
-// 0 Arreglo con los ids de los responsables de cada cuartel, ordenados de menor a mayor
+// 0 ✅ Arreglo con los ids de los responsables de cada cuartel, ordenados de menor a mayor
 export const listPaddockManagerIds = () => {
 	return paddockManagers.map(({ id }) => id).sort()
 }
 
-// 1 Arreglo con los ruts de los responsables de los cuarteles, ordenados por nombre
+// 1 ✅ Arreglo con los ruts de los responsables de los cuarteles, ordenados por nombre
 export const listPaddockManagersByName = () => {
 	const sortedManagersByName = paddockManagers.sort((inEl, prevEl) => {
 		if (inEl.name > prevEl.name) {
@@ -218,70 +218,145 @@ export const listPaddockManagersByName = () => {
 	return sortedManagersByName.map(({ taxNumber }) => taxNumber)
 }
 
-// 2 Arreglo con los nombres de cada tipo de cultivo,
+// 2 ✅ Arreglo con los nombres de cada tipo de cultivo,
 // ordenados decrecientemente por la suma TOTAL de la cantidad de hectáreas plantadas de cada uno de ellos.
 export const sortPaddockTypeByTotalArea = () => {
-	// const paddocksByIdArea = paddocks.map(({ area, paddockTypeId }) => ({
-	// 	area,
-	// 	paddockTypeId,
-	// }))
-	// const sortedPaddocksById = paddocksByIdArea.sort((a, b) => {
-	// 	if (a.paddockTypeId > b.paddockTypeId) {
-	// 		return 1
-	// 	}
-	// 	if (a.paddockTypeId < b.paddockTypeId) {
-	// 		return -1
-	// 	}
-	// })
-	// let initialPaddock = sortedPaddocksById[0]
-	// const mirrorPaddocksArray = []
-	// for (let i = 0; i < sortedPaddocksById.length; i++) {
-	// 	if (
-	// 		sortedPaddocksById[i + 1].paddockTypeId === initialPaddock.paddockTypeId
-	// 	) {
-	// 		mirrorPaddocksArray.push({
-	// 			area: sortedPaddocksById[i].area + initialPaddock.area,
-	// 			paddockTypeId: sortedPaddocksById[i].paddockTypeId,
-	// 		})
-	// 	}
-	// }
-	// return mirrorPaddocksArray
-}
+	const paddocksWithNames = paddocks.map(({ area, paddockTypeId }) => {
+		let paddockAux = { paddockTypeId: 0, name: '', area: 0 }
 
-// 3 Arreglo con los nombres de los administradores, ordenados decrecientemente por la suma TOTAL de hectáreas que administran.
-export const sortFarmManagerByAdminArea = () => {
-	const sortedFarmManagersById = paddocks
-		.map(({ paddockManagerId }) => ({
-			paddockManagerId,
-		}))
-		.sort((a, b) => {
-			if (a.paddockManagerId > b.paddockManagerId) {
-				return 1
-			}
-			if (a.paddockManagerId < b.paddockManagerId) {
-				return -1
+		paddockType.forEach((item) => {
+			if (item.id === paddockTypeId) {
+				paddockAux.area = area
+				;(paddockAux.name = item.name), (paddockAux.paddockTypeId = paddockTypeId)
 			}
 		})
-	const sumPaddockArrays = sortedFarmManagersById.map((el, index) => {
-		return {
-			1: el.paddockManagerId === 1 ? index + 1 : index,
-			2: el.paddockManagerId === 2 ? index + 2 : index,
-			3: el.paddockManagerId === 3 ? index + 3 : index,
-			4: el.paddockManagerId === 4 ? index + 4 : index,
-			5: el.paddockManagerId === 5 ? index + 5 : index,
-		}
+		return paddockAux
 	})
-	return sumPaddockArrays
+
+	const finalPaddocks = paddockType
+		.map((el) => {
+			return {
+				...el,
+				name: el.name,
+				totalArea: paddocksWithNames
+					.filter((padd) => padd.paddockTypeId === el.id)
+					.map((el) => el.area)
+					.reduce((prev, init) => prev + init, 0),
+			}
+		})
+		.sort((a, b) =>
+			Math.round(a.totalArea / 10000) > Math.round(b.totalArea / 10000) ? -1 : 1
+		)
+		.map((el) => el.name)
+	return finalPaddocks
+}
+
+// 3 ✅  Arreglo con los nombres de los administradores, ordenados decrecientemente por la suma TOTAL de hectáreas que administran.
+export const sortFarmManagerByAdminArea = () => {
+	const paddocksWithAdminIds = paddocks.map(({ paddockManagerId, area }) => {
+		let paddockAux = { paddockManagerId: 0, name: '', area: 0 }
+
+		paddockManagers.forEach((item) => {
+			if (item.id === paddockManagerId) {
+				paddockAux.area = area
+				;(paddockAux.name = item.name), (paddockAux.paddockManagerId = item.id)
+			}
+		})
+		return paddockAux
+	})
+
+	const finalPaddocks = paddockManagers
+		.map((el) => {
+			return {
+				...el,
+
+				totalPaddocksHandled: paddocksWithAdminIds
+					.filter((padd) => padd.paddockManagerId === el.id)
+					.map((el) => el.area)
+					.reduce((prev, init) => prev + init, 0),
+			}
+		})
+		.sort((a, b) => (a.totalPaddocksHandled > b.totalPaddocksHandled ? -1 : 1))
+		.map((el) => el.name)
+
+	return finalPaddocks
 }
 
 // 4 Objeto en que las claves sean los nombres de los campos y los valores un arreglo con los ruts de sus administradores ordenados alfabéticamente por nombre.
 export const farmManagerNames = () => {}
 
-// 5 Arreglo ordenado decrecientemente con los m2 totales de cada campo que tengan más de 2 hectáreas en Paltos
-export const biggestAvocadoFarms = () => {}
+// 5 ✅ Arreglo ordenado decrecientemente con los m2 totales de cada campo que tengan más de 2 hectáreas en Paltos
+export const biggestAvocadoFarms = () => {
+	const paddocksWithArea = paddocks
+		.map(({ area, paddockTypeId, farmId }) => {
+			let paddockAux = { paddockTypeId: 0, name: '', area: 0, farmId: 0 }
 
-// 6 Arreglo con nombres de los administradores de la FORESTAL Y AGRÍCOLA LO ENCINA, ordenados por nombre, que trabajen más de 1000 m2 de Cerezas
-export const biggestCherriesManagers = () => {}
+			paddockType.forEach((item) => {
+				if (item.id === paddockTypeId) {
+					paddockAux.farmId = farmId
+					paddockAux.area = area
+					;(paddockAux.name = item.name), (paddockAux.paddockTypeId = paddockTypeId)
+				}
+			})
+			return paddockAux
+		})
+		.filter((el) => el.paddockTypeId === 1)
+
+	const finalPaddocks = farms.map((el) => {
+		return {
+			...el,
+
+			totalArea: paddocksWithArea
+				.filter((padd) => padd.paddockTypeId === 1 && padd.farmId === el.id)
+				.map((el) => el.area)
+				.reduce((prev, init) => prev + init, 0),
+		}
+	})
+
+	return finalPaddocks
+		.filter((el) => el.totalArea > 20000)
+		.map((el) => el.totalArea)
+		.sort((a, b) => (a > b ? -1 : 1))
+}
+
+// 6 ✅ Arreglo con nombres de los administradores de la FORESTAL Y AGRÍCOLA LO ENCINA, ordenados por nombre, que trabajen más de 1000 m2 de Cerezas
+export const biggestCherriesManagers = () => {
+	const paddocksWithArea = paddocks
+		.map(({ area, paddockTypeId, farmId, paddockManagerId }) => {
+			let paddockAux = {
+				paddockTypeId: 0,
+				seedName: '',
+				area: 0,
+				farmId: 0,
+				paddockManagerId: 0,
+			}
+
+			paddockType.forEach((item) => {
+				if (item.id === paddockTypeId) {
+					paddockAux.farmId = farmId
+					paddockAux.area = area
+					;(paddockAux.seedName = item.name),
+						(paddockAux.paddockTypeId = paddockTypeId)
+					paddockAux.paddockManagerId = paddockManagerId
+				}
+			})
+
+			return paddockAux
+		})
+		.filter((el) => el.farmId === 3 && el.paddockTypeId === 3)
+
+	const finalPaddocks = paddockManagers.map((el) => {
+		return {
+			...el,
+
+			totalArea: paddocksWithArea
+				.filter((padd) => padd.area > 2000 && el.id === padd.paddockManagerId)
+				.map((el) => el.area),
+		}
+	})
+
+	return finalPaddocks.filter((el) => el.totalArea > 2000).map((el) => el.name)
+}
 
 // 7 Objeto en el cual las claves sean el nombre del administrador y el valor un arreglo con los nombres de los campos que administra, ordenados alfabéticamente
 export const farmManagerPaddocks = () => {}
